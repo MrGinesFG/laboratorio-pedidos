@@ -42,7 +42,11 @@ require_once __DIR__ . '/../src/Notifications/NotificationSender.php';
 
 require_once __DIR__ . '/../src/Legacy/LegacyNotifier.php';
 require_once __DIR__ . '/../src/Legacy/LegacyNotifierAdapter.php';
-require_once __DIR__ . '/../src/Reports/ReportGenerator.php';
+require_once __DIR__ . '/../src/Reports/Report.php';
+require_once __DIR__ . '/../src/Reports/BasicReport.php';
+require_once __DIR__ . '/../src/Reports/DigitalSignatureDecorator.php';
+require_once __DIR__ . '/../src/Reports/PdfReportDecorator.php';
+require_once __DIR__ . '/../src/Reports/WatermarkDecorator.php';
 
 // Events (Observer) — reemplaza al OrderEvents.php que ya no existe
 require_once __DIR__ . '/../src/Events/OrderObserver.php';
