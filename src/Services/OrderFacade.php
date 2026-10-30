@@ -22,6 +22,26 @@ final class OrderFacade
     ) {
     }
 
+    /**
+     * Pedidos listos para mostrar: el total ya viene calculado con la
+     * PricingStrategy que corresponde, asi la vista no calcula nada.
+     *
+     * @return array<int, array{id: int, paciente: string, total: float}>
+     */
+    public function listOrders(): array
+    {
+        return array_map(
+            fn (Order $order): array => [
+                'id'       => $order->id,
+                'paciente' => $order->patient,
+                'total'    => (new PriceCalculator(
+                    PricingStrategyFactory::forPatientType($order->patientType)
+                ))->calculate($order->amount),
+            ],
+            $this->orders->findAll()
+        );
+    }
+
     public function createOrder(
         int $id,
         string $paciente,

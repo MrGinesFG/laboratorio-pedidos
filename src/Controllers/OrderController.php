@@ -36,13 +36,9 @@ final class OrderController
         $this->render('order_created', ['order' => $order]);
     }
 
-    /**
-     * ❌ METODO MAL APLICADO: index()
-     *    Delega en la vista la consulta a la base de datos (ver views/orders.php).
-     */
     public function index(): void
     {
-        require __DIR__ . '/../../views/orders.php';
+        $this->render('orders', ['pedidos' => $this->facade->listOrders()]);
     }
 
     public function report(): void
