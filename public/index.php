@@ -73,6 +73,15 @@ define('DB_NAME', 'laboratorio');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
+// Singleton: la configuracion se inyecta UNA sola vez, al arrancar.
+// Despues cualquier clase usa Connection::getInstance() sin parametros.
+Connection::getInstance([
+    'host' => DB_HOST,
+    'name' => DB_NAME,
+    'user' => DB_USER,
+    'pass' => DB_PASS,
+]);
+
 /*
  * ✅ FORMA CORRECTA:
  *   $config = require __DIR__ . '/../config/database.php';   // ignorado por git
