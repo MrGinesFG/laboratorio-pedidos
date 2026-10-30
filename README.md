@@ -1,99 +1,66 @@
-# laboratorio-pedidos — proyecto de práctica
+# laboratorio-pedidos — Proyecto Integrador de Patrones de Diseño
 
-Sistema de gestión de pedidos de un laboratorio de análisis clínicos.
+Sistema de gestión de pedidos de un laboratorio de análisis clínicos.  
 **PHP Vanilla, sin frameworks, sin Composer.** Corre en XAMPP tal cual está.
 
-> ⚠️ **Este proyecto está roto a propósito.**
-> Cada archivo contiene deuda técnica sembrada, marcada con comentarios:
->
-> ```php
-> // ❌ MAL APLICADO: qué método está mal y qué principio viola
-> // ✅ FORMA CORRECTA: qué patrón corresponde y cómo se estructura
-> ```
->
-> El objetivo no es que funcione mejor: ya funciona. El objetivo es que
-> **se pueda cambiar sin miedo**.
+> ✅ **Proyecto completado con 11 patrones de diseño aplicados.**  
+> Cada módulo con deuda técnica sembrada fue diagnosticado con evidencia y refactorizado en ramas independientes mediante Pull Requests colaborativos y revisión cruzada.
 
 ---
 
-## Cómo levantarlo
+## Cómo levantarlo en local (XAMPP)
 
-1. Copiar la carpeta dentro de `C:\xampp\htdocs\`.
-2. Iniciar Apache desde el panel de XAMPP (MySQL **no** hace falta).
-3. Abrir: `http://localhost/mini-proyecto-laboratorio/public/index.php`
+1. Copiar o clonar la carpeta del proyecto dentro de `C:\xampp\htdocs\laboratorio-pedidos` (o correr el servidor embebido de PHP con `php -S localhost:8000 -t public`).
+2. *(Opcional)* Si se va a conectar a MySQL, copiar `config/database.example.php` a `config/database.php` con las credenciales locales. Si no existe, el sistema utiliza la persistencia simulada en memoria.
+3. Abrir en el navegador:
+   - `http://localhost/laboratorio-pedidos/public/index.php`
 
-Acciones disponibles:
+### Acciones disponibles:
 
 | URL | Qué hace |
 |---|---|
-| `public/index.php?accion=crear` | Crea un pedido pasando por toda la deuda |
-| `public/index.php?accion=listar` | Lista pedidos desde la vista |
-| `public/index.php?accion=reporte` | Genera un reporte con banderas booleanas |
-
-La persistencia está simulada en memoria para que el proyecto arranque sin
-configurar MySQL. Eso **no** es parte de la deuda a corregir.
+| `public/index.php?accion=crear` | Crea un pedido ejecutando la fachada, validación, cálculo de precio y notificación a observadores |
+| `public/index.php?accion=crear-facade` | Misma acción unificada mediante `OrderFacade` |
+| `public/index.php?accion=listar` | Lista los pedidos persistidos a través de la vista limpia MVC |
+| `public/index.php?accion=reporte` | Genera el reporte del día componiendo decoradores (firma digital, PDF, marca de agua) |
 
 ---
 
-## Mapa de deudas
+## Mapa de los 11 patrones aplicados
 
-| Archivo | Síntoma sembrado | Patrón / principio | Ejercicio |
-|---|---|---|---|
-| `public/index.php` | Requires manuales, credenciales en el código, ruteo con `if` | Autoload + config externa + tabla de rutas | — |
-| `src/Database/Connection.php` | Una conexión nueva por consulta; excepción silenciada | **Singleton** | — |
-| `src/Notifications/NotificationSender.php` | `if` por tipo repetido en 3 archivos | **Factory** | Ej. 2 |
-| `src/Pricing/PriceCalculator.php` | `switch` con todos los algoritmos + lógica duplicada | **Strategy** | Ej. 1 |
-| `src/Events/OrderEvents.php` | Avisos encadenados a mano a clases concretas | **Observer** | Ej. 5 |
-| `src/Legacy/LegacyNotifier.php` | Clase de terceros modificada + copia y pega | **Adapter** | Ej. 3 |
-| `src/Reports/ReportGenerator.php` | Parámetros booleanos (`boolean trap`) | **Decorator** | Ej. 4 |
-| `src/Services/OrderService.php` | Método que hace de todo | **Facade** + SRP | Ej. 6 |
-| `src/Controllers/OrderController.php` | SQL + negocio + HTML en el controlador | **MVC** + SRP | Ej. 7 |
-| `src/Models/Order.php` | Modelo que se persiste y calcula precios | **Repository** + Strategy | — |
-| `views/orders.php` | Consulta, calcula y no escapa la salida | **MVC** | Ej. 8 |
+| # | Componente / Archivo | Problema / Deuda resuelta | Patrón aplicado | Tipo | PR |
+|---|---|---|---|---|---|
+| 1 | `src/Pricing/PriceCalculator.php` | Switch gigante y lógica duplicada para descuentos | **Strategy** | Comportamiento | PR #1 |
+| 2 | `src/Events/OrderEvents.php` | Avisos acoplados directamente a clases concretas | **Observer** | Comportamiento | PR #2 |
+| 3 | `src/Notifications/NotificationSender.php` | Condicionales repetidos para instanciar notificaciones | **Factory Method** | Creacional | PR #3 / #4 |
+| 4 | `src/Services/OrderService.php` | Método que concentraba todas las responsabilidades | **Facade** | Estructural | PR #4 |
+| 5 | `src/Database/Connection.php` | Conexión nueva por consulta (`new`) y error silenciado | **Singleton** | Creacional | PR #5 |
+| 6 | `src/Legacy/LegacyNotifier.php` | Código de terceros alterado y duplicación de clases | **Adapter** | Estructural | PR #6 |
+| 7 | `src/Reports/ReportGenerator.php` | Parámetros booleanos combinados (*boolean trap*) | **Decorator** | Estructural | PR #7 |
+| 8 | `src/Models/Order.php` | Modelo que calculaba precios y persistía en BD | **Repository** | Arquitectura | PR #8 |
+| 9 | `src/Controllers/OrderController.php` | Controlador mezclado con SQL, lógica y HTML | **MVC (Controlador)** | Arquitectura | PR #9 |
+| 10 | `views/orders.php` | Vista con consultas SQL, lógica y sin sanitización | **MVC (Vista)** | Arquitectura | PR #10 |
+| 11 | `public/index.php` | Requires manuales, credenciales y ruteo con `if` | **Autoload + Router** | Arquitectura | PR #11 |
 
 ---
 
-## La medida de la deuda de este proyecto
+## Métrica del proyecto
 
-El descuento de obra social (**0.7**) está escrito en **cinco archivos distintos**:
-
+En el estado inicial, el descuento de obra social (`0.7`) estaba disperso y duplicado en **cinco archivos distintos**:
 ```
 src/Models/Order.php
-src/Pricing/PriceCalculator.php   (dos veces)
+src/Pricing/PriceCalculator.php (duplicado)
 src/Services/OrderService.php
 src/Controllers/OrderController.php
 views/orders.php
 ```
 
-Cuando el laboratorio lo cambie al 25%, ese número es exactamente
-cuántos lugares hay que tocar y cuántas oportunidades hay de olvidarse uno.
-
-**Ese es el punto de toda la unidad.**
+Con la aplicación de **Strategy** y **Repository**, dicho valor quedó centralizado en **un único archivo** (`InsuranceStrategy.php`). Para modificar o agregar un convenio nuevo, ahora se añade una única clase sin tocar el resto del sistema (principio Abierto/Cerrado).
 
 ---
 
-## Mecánica de la clase práctica
+## Flujo de trabajo y colaboración
 
-```
-1. Cada grupo toma UN archivo del mapa de deudas.       (5 min)
-2. Lee los comentarios ❌ y ✅.                          (5 min)
-3. Refactoriza en una rama propia: feat/patron-<nombre>  (20 min)
-4. Abre un Pull Request que responda tres cosas:
-     - qué deuda encontró (con la línea exacta)
-     - qué patrón aplicó y por qué ese y no otro
-     - qué consecuencia negativa tiene su propia solución
-5. Otro grupo revisa el PR y comenta.                    (10 min)
-```
-
-El PR revisado por otro grupo es evidencia del TP Integrador.
-
----
-
-## Reglas del refactor
-
-- **No se rompe funcionalidad.** Antes y después, la app hace lo mismo.
-- **Un patrón por rama.** Nada de una rama con seis cambios mezclados.
-- **Se borra el código viejo.** Dejar el método anterior "por las dudas" es
-  deuda nueva.
-- **Se documenta la consecuencia negativa.** Un patrón sin contras analizadas
-  es sobreingeniería esperando su turno.
+- **Metodología:** Feature Branch Workflow (`feat/patron-*`).
+- **Revisiones cruzadas:** Cada Pull Request contó con descripción técnica (deuda con línea, patrón aplicado, justificación y consecuencias negativas asumidas) y fue revisado y aprobado por otro compañero de equipo antes de integrarse a `main`.
+- **Registro completo de deuda:** Detallado en [`docs/DEUDA-TECNICA.md`](docs/DEUDA-TECNICA.md).
