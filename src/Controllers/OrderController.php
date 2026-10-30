@@ -87,7 +87,12 @@ class OrderController
         $events->subscribe(new SmsObserver());
         $events->subscribe(new DashboardObserver());
 
-        $facade = new OrderFacade(new OrderValidator(), new NotificationSender(), $events);
+        $facade = new OrderFacade(
+            new OrderValidator(),
+            new NotificationSender(),
+            $events,
+            new OrderRepository(Connection::getInstance())
+        );
         $order = $facade->createOrder($id, $paciente, $monto, $tipo, $canal, $destino);
 
         echo "<h1>Pedido creado (via Facade)</h1>";
