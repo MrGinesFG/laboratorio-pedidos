@@ -17,6 +17,21 @@ final class OrderRepository
     {
     }
 
+    /**
+     * Persistencia simulada en memoria (no es parte de la deuda del TP): en
+     * el sistema real aca va un SELECT. Son los mismos pedidos de ejemplo que
+     * antes estaban escritos dentro de la vista.
+     *
+     * @return Order[]
+     */
+    public function findAll(): array
+    {
+        return [
+            new Order(1, 'Juan Perez', 15000, 'obra_social'),
+            new Order(2, 'Ana Gomez', 22000, 'particular'),
+        ];
+    }
+
     public function save(Order $order): void
     {
         $this->connection->ejecutar(
