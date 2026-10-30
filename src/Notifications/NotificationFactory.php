@@ -20,6 +20,7 @@ final class NotificationFactory
             'email'    => new EmailNotification($destino),
             'sms'      => new SmsNotification($destino),
             'whatsapp' => new WhatsAppNotification($destino),
+            'legacy'   => new LegacyNotifierAdapter(new LegacyNotifier()),
             default    => throw new InvalidArgumentException(
                 "Tipo de notificacion no soportado: {$type}"
             ),

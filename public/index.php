@@ -41,6 +41,7 @@ require_once __DIR__ . '/../src/Notifications/NotificationFactory.php';
 require_once __DIR__ . '/../src/Notifications/NotificationSender.php';
 
 require_once __DIR__ . '/../src/Legacy/LegacyNotifier.php';
+require_once __DIR__ . '/../src/Legacy/LegacyNotifierAdapter.php';
 require_once __DIR__ . '/../src/Reports/ReportGenerator.php';
 
 // Events (Observer) — reemplaza al OrderEvents.php que ya no existe
