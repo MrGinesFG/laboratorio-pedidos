@@ -98,11 +98,22 @@ $accion = $_GET['accion'] ?? 'crear';
 
 // ❌ MAL APLICADO: ruteo con if encadenados. Viola Abierto/Cerrado:
 //    cada pantalla nueva obliga a MODIFICAR este bloque.
-$controller = new OrderController();
-if ($accion === 'crear') {
+//
+// Raiz de composicion: aca (y solo aca) se arman las dependencias concretas.
+$events = new OrderSubject();
+$events->subscribe(new EmailObserver());
+$events->subscribe(new SmsObserver());
+$events->subscribe(new DashboardObserver());
+
+$controller = new OrderController(new OrderFacade(
+    new OrderValidator(),
+    new NotificationSender(),
+    $events,
+    new OrderRepository(Connection::getInstance())
+));
+
+if ($accion === 'crear' || $accion === 'crear-facade') {
     $controller->create();
-} elseif ($accion === 'crear-facade') {
-    $controller->createWithFacade();
 } elseif ($accion === 'listar') {
     $controller->index();
 } elseif ($accion === 'reporte') {

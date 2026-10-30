@@ -1,104 +1,41 @@
 <?php
 /**
  * ============================================================================
- *  CONTROLADOR DE PEDIDOS
- *  Patron esperado: MVC bien aplicado (arquitectonico) + SRP
+ *  CONTROLADOR DE PEDIDOS — MVC + SRP
  * ============================================================================
+ *  Antes (God Controller): armaba SQL, decidia el descuento, imprimia HTML con
+ *  echo, creaba con `new` todas sus dependencias y repetia el if de
+ *  notificaciones.
  *
- *  ❌ DEUDA SEMBRADA — el "God Controller"
- *     1. Arma SQL directamente.
- *     2. Contiene reglas de negocio (descuentos).
- *     3. Imprime HTML con echo.
- *     4. Crea con new todas sus dependencias concretas.
- *     5. Repite por TERCERA vez el if de notificaciones.
+ *  Ahora el controlador solo:
+ *   1. Recibe la entrada del request.
+ *   2. Llama a UN servicio (OrderFacade), que ya sabe validar, calcular,
+ *      guardar, notificar y avisar.
+ *   3. Elige que vista renderizar.
  *
- *  Tener las carpetas /Controllers /Models /views NO significa aplicar MVC.
- *  MVC es separacion de responsabilidades, no estructura de directorios.
- *
- *  ✅ FORMA CORRECTA
- *     El controlador solo: recibe la entrada, la valida como entrada,
- *     llama a UN servicio o fachada, y elige que vista renderizar.
+ *  Sus dependencias llegan por constructor (las arma index.php).
  * ============================================================================
  */
 
-class OrderController
+final class OrderController
 {
-    /**
-     * ❌ METODO MAL APLICADO: create()
-     *    Mezcla las tres capas de MVC dentro de un solo metodo.
-     */
+    public function __construct(private OrderFacade $facade)
+    {
+    }
+
+    /** Atiende las acciones `crear` y `crear-facade` (ahora son el mismo caso de uso). */
     public function create(): void
     {
-        // ❌ 1. Entrada sin validar ni sanitizar
-        $id       = (int) ($_GET['id'] ?? 1);
-        $paciente = $_GET['paciente'] ?? 'Juan Perez';
-        $monto    = (float) ($_GET['monto'] ?? 15000);
-        $tipo     = $_GET['tipo'] ?? 'obra_social';
-
-        // ❌ 2. Regla de negocio dentro del controlador (deberia ser Strategy)
-        $total = $tipo === 'obra_social' ? $monto * 0.7 : $monto;
-
-        // ❌ 3. SQL dentro del controlador (deberia ser Repository)
-        $conexion = Connection::getInstance();
-        $conexion->ejecutar("INSERT INTO orders VALUES ({$id}, '{$paciente}', {$total})");
-
-        // ❌ 4. Notificacion resuelta otra vez con if (deberia ser Factory)
-        $notificador = new NotificationSender();
-        $notificador->enviar('email', 'paciente@mail.com', "Pedido {$id} creado");
-
-        // ❌ 5. HTML impreso desde el controlador (deberia ser una View)
-        echo "<h1>Pedido creado</h1>";
-        echo "<p>Paciente: {$paciente}</p>";       // ❌ ademas, sin escapar: XSS
-        echo "<p>Total: $ {$total}</p>";
+        try {
+            $order = $this->facade->createOrder(...$this->pedidoDesdeRequest());
+        } catch (InvalidArgumentException $e) {
+            http_response_code(400);
+            $this->render('error', ['mensaje' => $e->getMessage()]);
+            return;
+        }
+        $this->render('order_created', ['order' => $order]);
     }
 
-    /*
-     * ✅ FORMA CORRECTA:
-     *
-     * public function create(): void
-     * {
-     *     $order = new Order(
-     *         (int) $_POST['id'],
-     *         (string) $_POST['paciente'],
-     *         (float) $_POST['monto'],
-     *         (string) $_POST['tipo']
-     *     );
-     *
-     *     $this->facade->createOrder($order);          // toda la logica, una linea
-     *
-     *     require __DIR__ . '/../../views/orders.php'; // la vista solo presenta
-     * }
-     */
-/**
-     * ✅ NUEVO (TP): usa la OrderFacade en vez de repetir a mano el
-     *    switch de precio + el if de notificaciones.
-     */
-    public function createWithFacade(): void
-    {
-        $id       = (int) ($_GET['id'] ?? 1);
-        $paciente = $_GET['paciente'] ?? 'Juan Perez';
-        $monto    = (float) ($_GET['monto'] ?? 15000);
-        $tipo     = $_GET['tipo'] ?? 'obra_social';
-        $canal    = $_GET['canal'] ?? 'email';
-        $destino  = $_GET['destino'] ?? 'paciente@mail.com';
-
-        $events = new OrderSubject();
-        $events->subscribe(new EmailObserver());
-        $events->subscribe(new SmsObserver());
-        $events->subscribe(new DashboardObserver());
-
-        $facade = new OrderFacade(
-            new OrderValidator(),
-            new NotificationSender(),
-            $events,
-            new OrderRepository(Connection::getInstance())
-        );
-        $order = $facade->createOrder($id, $paciente, $monto, $tipo, $canal, $destino);
-
-        echo "<h1>Pedido creado (via Facade)</h1>";
-        echo "<p>Paciente: {$order->patient}</p>";
-        echo "<p>Total: $ {$order->amount}</p>";
-    }
     /**
      * ❌ METODO MAL APLICADO: index()
      *    Delega en la vista la consulta a la base de datos (ver views/orders.php).
@@ -108,10 +45,6 @@ class OrderController
         require __DIR__ . '/../../views/orders.php';
     }
 
-    /**
-     * ❌ METODO MAL APLICADO: report()
-     *    (Ya no usa banderas booleanas: compone decoradores de Report.)
-     */
     public function report(): void
     {
         $reporte = new BasicReport('Pedidos del dia');
@@ -119,16 +52,25 @@ class OrderController
         $reporte = new PdfReportDecorator($reporte);
         $reporte = new WatermarkDecorator($reporte);
 
-        echo $reporte->generate();
+        $this->render('report', ['contenido' => $reporte->generate()]);
+    }
+
+    /** Lee y castea la entrada. La validacion de negocio la hace el Facade. */
+    private function pedidoDesdeRequest(): array
+    {
+        return [
+            (int) ($_GET['id'] ?? 1),
+            (string) ($_GET['paciente'] ?? 'Juan Perez'),
+            (float) ($_GET['monto'] ?? 15000),
+            (string) ($_GET['tipo'] ?? 'obra_social'),
+            (string) ($_GET['canal'] ?? 'email'),
+            (string) ($_GET['destino'] ?? 'paciente@mail.com'),
+        ];
+    }
+
+    private function render(string $vista, array $datos = []): void
+    {
+        extract($datos, EXTR_SKIP);
+        require __DIR__ . '/../../views/' . $vista . '.php';
     }
 }
-
-/*
- * ----------------------------------------------------------------------------
- * EJERCICIO 7 (TP): dejar create() con un maximo de 5 lineas ejecutables,
- * sin SQL, sin reglas de negocio y sin echo.
- *
- * PREGUNTA PARA EL PR: cuales de los 5 problemas de este archivo son deuda
- * de DISEÑO (Unidad 2) y cuales son deuda de PROCESO (Unidad 1)?
- * ----------------------------------------------------------------------------
- */
