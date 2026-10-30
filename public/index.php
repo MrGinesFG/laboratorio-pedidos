@@ -55,6 +55,7 @@ require_once __DIR__ . '/../src/Events/SmsObserver.php';
 require_once __DIR__ . '/../src/Events/DashboardObserver.php';
 require_once __DIR__ . '/../src/Events/OrderSubject.php';
 
+require_once __DIR__ . '/../src/Repositories/OrderRepository.php';
 require_once __DIR__ . '/../src/Services/OrderValidator.php';
 require_once __DIR__ . '/../src/Services/OrderFacade.php';
 require_once __DIR__ . '/../src/Controllers/OrderController.php';

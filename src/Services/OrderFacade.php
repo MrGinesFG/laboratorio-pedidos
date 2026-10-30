@@ -17,7 +17,8 @@ final class OrderFacade
     public function __construct(
         private OrderValidator $validator,
         private NotificationSender $notifier,
-        private OrderSubject $events
+        private OrderSubject $events,
+        private OrderRepository $orders
     ) {
     }
 
@@ -35,7 +36,7 @@ final class OrderFacade
         $total = (new PriceCalculator($strategy))->calculate($monto);
 
         $order = new Order($id, $paciente, $total, $tipoPaciente);
-        $order->guardar();
+        $this->orders->save($order);
 
         $this->notifier->enviar($tipoNotificacion, $destino, "Pedido {$id} por $ {$total}");
         $this->events->notify($order);

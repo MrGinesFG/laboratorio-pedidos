@@ -45,13 +45,17 @@ final class Connection
         return self::$instance;
     }
 
-    public function ejecutar(string $sql): void
+    /**
+     * @param array<string, scalar> $params valores para los marcadores :nombre
+     *        (consulta parametrizada: los valores nunca se concatenan al SQL).
+     */
+    public function ejecutar(string $sql, array $params = []): void
     {
         if (trim($sql) === '') {
             throw new InvalidArgumentException('La consulta SQL no puede estar vacia');
         }
 
-        $this->tablaEnMemoria[] = $sql;
+        $this->tablaEnMemoria[] = ['sql' => $sql, 'params' => $params];
     }
 
     public function consultas(): array
