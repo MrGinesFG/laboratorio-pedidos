@@ -1,0 +1,29 @@
+name: CI
+
+# Se ejecuta en cada push (a cualquier rama) y en cada Pull Request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar PHP y Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Instalar dependencias
+        run: composer install --prefer-dist --no-progress
+
+      - name: Lint (sintaxis de todos los archivos PHP)
+        run: find src public views config tests -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Ejecutar pruebas unitarias
+        run: vendor/bin/phpunit
